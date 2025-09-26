@@ -14,9 +14,9 @@ function App() {
 
   const tabs = [
     { id: 'upload' as Tab, label: 'Submit Evidence', icon: Upload },
-    { id: 'evidence' as Tab, label: 'My Evidence', icon: FileText },
+    { id: 'evidence' as Tab, label: 'All Evidence', icon: FileText },
     { id: 'search' as Tab, label: 'Search Evidence', icon: Search },
-    { id: 'access' as Tab, label: 'Access Control', icon: Users },
+    { id: 'access' as Tab, label: 'System Info', icon: Users },
     { id: 'settings' as Tab, label: 'Settings', icon: Settings },
   ];
 
@@ -97,7 +97,7 @@ function App() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
-                  <span>Victim controls access permissions</span>
+                  <span>All evidence is publicly accessible</span>
                 </div>
               </div>
             </div>

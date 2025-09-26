@@ -75,18 +75,49 @@ export const useContract = () => {
   };
 
   const getEvidence = async (evidenceId: number) => {
-    if (!contract) throw new Error('Contract not initialized');
-
     try {
-      const stored = localStorage.getItem('evidenceData') || '[]';
-      const evidenceData = JSON.parse(stored);
+      let stored = localStorage.getItem('evidenceData') || '[]';
+      let evidenceData = JSON.parse(stored);
+      
+      // If no evidence exists, create some sample data for demonstration
+      if (evidenceData.length === 0) {
+        const sampleEvidence = [
+          {
+            id: 1,
+            victim: '0x1234567890123456789012345678901234567890',
+            ipfsHash: 'QmSampleHash1234567890abcdef',
+            encryptedKey: 'encrypted_key_sample_1',
+            timestamp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
+            description: 'Sample evidence demonstrating the public evidence system',
+            isActive: true,
+            hasAccess: true,
+            hasRequested: false
+          },
+          {
+            id: 2,
+            victim: '0x9876543210987654321098765432109876543210',
+            ipfsHash: 'QmSampleHash9876543210fedcba',
+            encryptedKey: 'encrypted_key_sample_2',
+            timestamp: Math.floor(Date.now() / 1000) - 7200, // 2 hours ago
+            description: 'Another sample piece of evidence stored on the blockchain',
+            isActive: true,
+            hasAccess: true,
+            hasRequested: false
+          }
+        ];
+        
+        localStorage.setItem('evidenceData', JSON.stringify(sampleEvidence));
+        localStorage.setItem('evidenceCounter', '2');
+        evidenceData = sampleEvidence;
+      }
+      
       const evidence = evidenceData.find((e: any) => e.id === evidenceId);
       
       if (!evidence) {
         throw new Error('Evidence not found');
       }
       
-      // Public system - everyone has access
+      // Public system - everyone has access, no wallet required
       return {
         ...evidence,
         hasAccess: true,
@@ -100,8 +131,40 @@ export const useContract = () => {
 
   const getAllEvidence = async () => {
     try {
-      const stored = localStorage.getItem('evidenceData') || '[]';
-      const evidenceData = JSON.parse(stored);
+      let stored = localStorage.getItem('evidenceData') || '[]';
+      let evidenceData = JSON.parse(stored);
+      
+      // If no evidence exists, create some sample data for demonstration
+      if (evidenceData.length === 0) {
+        const sampleEvidence = [
+          {
+            id: 1,
+            victim: '0x1234567890123456789012345678901234567890',
+            ipfsHash: 'QmSampleHash1234567890abcdef',
+            encryptedKey: 'encrypted_key_sample_1',
+            timestamp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago
+            description: 'Sample evidence demonstrating the public evidence system',
+            isActive: true,
+            hasAccess: true,
+            hasRequested: false
+          },
+          {
+            id: 2,
+            victim: '0x9876543210987654321098765432109876543210',
+            ipfsHash: 'QmSampleHash9876543210fedcba',
+            encryptedKey: 'encrypted_key_sample_2',
+            timestamp: Math.floor(Date.now() / 1000) - 7200, // 2 hours ago
+            description: 'Another sample piece of evidence stored on the blockchain',
+            isActive: true,
+            hasAccess: true,
+            hasRequested: false
+          }
+        ];
+        
+        localStorage.setItem('evidenceData', JSON.stringify(sampleEvidence));
+        localStorage.setItem('evidenceCounter', '2');
+        evidenceData = sampleEvidence;
+      }
       
       // Return all evidence sorted by timestamp (newest first)
       return evidenceData
