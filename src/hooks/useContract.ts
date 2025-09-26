@@ -11,7 +11,6 @@ export const useContract = () => {
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mockData, setMockData] = useState<any[]>([]);
 
   useEffect(() => {
     if (provider && signer && isConnected) {
@@ -28,6 +27,12 @@ export const useContract = () => {
     }
   }, [provider, signer, isConnected]);
 
+  const getNextEvidenceId = () => {
+    const stored = localStorage.getItem('evidenceCounter') || '0';
+    const counter = parseInt(stored) + 1;
+    localStorage.setItem('evidenceCounter', counter.toString());
+    return counter;
+  };
   const submitEvidence = async (ipfsHash: string, encryptedKey: string, description: string) => {
     if (!contract || !signer) throw new Error('Contract not initialized');
     
@@ -38,7 +43,7 @@ export const useContract = () => {
       // Simulate blockchain transaction
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const evidenceId = mockData.length + 1;
+      const evidenceId = getNextEvidenceId();
       const userAddress = await signer.getAddress();
       
       const newEvidence = {
@@ -53,8 +58,6 @@ export const useContract = () => {
         hasRequested: false,
         accessRequests: []
       };
-      
-      setMockData(prev => [...prev, newEvidence]);
       
       // Store in localStorage for persistence
       const stored = localStorage.getItem('evidenceData') || '[]';
@@ -84,7 +87,20 @@ export const useContract = () => {
         throw new Error('Evidence not found');
       }
       
-      return evidence;
+      // Check if current user has access
+      const userAddress = await signer.getAddress();
+      const hasAccess = evidence.victim.toLowerCase() === userAddress.toLowerCase() || 
+                       (evidence.grantedAccess && evidence.grantedAccess.some((access: any) => 
+                         access.address.toLowerCase() === userAddress.toLowerCase()));
+      
+      const hasRequested = evidence.accessRequests && evidence.accessRequests.some((req: any) => 
+        req.address.toLowerCase() === userAddress.toLowerCase());
+      
+      return {
+        ...evidence,
+        hasAccess,
+        hasRequested
+      };
     } catch (err: any) {
       console.error('Get evidence failed:', err);
       throw err;
@@ -124,12 +140,21 @@ export const useContract = () => {
         if (!evidenceData[evidenceIndex].accessRequests) {
           evidenceData[evidenceIndex].accessRequests = [];
         }
+        
+        // Check if already requested
+        const alreadyRequested = evidenceData[evidenceIndex].accessRequests.some(
+          (req: any) => req.address.toLowerCase() === userAddress.toLowerCase()
+        );
+        
+        if (!alreadyRequested) {
         evidenceData[evidenceIndex].accessRequests.push({
+            id: `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           address: userAddress,
           timestamp: Date.now(),
           status: 'pending'
         });
         localStorage.setItem('evidenceData', JSON.stringify(evidenceData));
+        }
       }
       
       setIsLoading(false);
@@ -170,7 +195,7 @@ export const useContract = () => {
             (req: any) => req.address.toLowerCase() === userAddress.toLowerCase()
           );
           if (requestIndex !== -1) {
-            evidenceData[evidenceIndex].accessRequests[requestIndex].status = 'granted';
+            evidenceData[evidenceIndex].accessRequests[requestIndex].status = 'approved';
           }
         }
         
@@ -187,6 +212,38 @@ export const useContract = () => {
     }
   };
 
+  const denyAccess = async (evidenceId: number, userAddress: string) => {
+    if (!contract || !signer) throw new Error('Contract not initialized');
+    
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const stored = localStorage.getItem('evidenceData') || '[]';
+      const evidenceData = JSON.parse(stored);
+      const evidenceIndex = evidenceData.findIndex((e: any) => e.id === evidenceId);
+      
+      if (evidenceIndex !== -1 && evidenceData[evidenceIndex].accessRequests) {
+        const requestIndex = evidenceData[evidenceIndex].accessRequests.findIndex(
+          (req: any) => req.address.toLowerCase() === userAddress.toLowerCase()
+        );
+        if (requestIndex !== -1) {
+          evidenceData[evidenceIndex].accessRequests[requestIndex].status = 'denied';
+        }
+        localStorage.setItem('evidenceData', JSON.stringify(evidenceData));
+      }
+      
+      setIsLoading(false);
+      return { success: true, txHash: `0x${Math.random().toString(16).substr(2, 64)}` };
+    } catch (err: any) {
+      console.error('Deny access failed:', err);
+      setError(err.message || 'Failed to deny access');
+      setIsLoading(false);
+      throw err;
+    }
+  };
   const revokeAccess = async (evidenceId: number, userAddress: string) => {
     if (!contract || !signer) throw new Error('Contract not initialized');
     
@@ -231,6 +288,34 @@ export const useContract = () => {
     }
   };
 
+  const getAllAccessRequests = async (userAddress: string) => {
+    try {
+      const stored = localStorage.getItem('evidenceData') || '[]';
+      const evidenceData = JSON.parse(stored);
+      
+      const userEvidences = evidenceData.filter((e: any) => 
+        e.victim.toLowerCase() === userAddress.toLowerCase()
+      );
+      
+      const allRequests: any[] = [];
+      userEvidences.forEach((evidence: any) => {
+        if (evidence.accessRequests) {
+          evidence.accessRequests.forEach((request: any) => {
+            allRequests.push({
+              ...request,
+              evidenceId: evidence.id,
+              evidenceDescription: evidence.description
+            });
+          });
+        }
+      });
+      
+      return allRequests.sort((a, b) => b.timestamp - a.timestamp);
+    } catch (err: any) {
+      console.error('Get all access requests failed:', err);
+      throw err;
+    }
+  };
   return {
     contract,
     isLoading,
@@ -240,7 +325,9 @@ export const useContract = () => {
     getUserEvidences,
     requestAccess,
     grantAccess,
+    denyAccess,
     revokeAccess,
     getPermissionRequests,
+    getAllAccessRequests,
   };
 };

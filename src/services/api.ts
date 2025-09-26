@@ -19,6 +19,14 @@ export interface EvidenceMetadata {
   encrypted: boolean;
 }
 
+export interface AccessRequest {
+  id: string;
+  evidenceId: number;
+  requesterAddress: string;
+  timestamp: number;
+  status: 'pending' | 'approved' | 'denied';
+  message?: string;
+}
 class ApiService {
   private async request(endpoint: string, options: RequestInit = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -71,9 +79,17 @@ class ApiService {
       console.warn('API not available, using mock response');
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate upload time
       
+      // Create a mock file blob for demonstration
+      const mockFileContent = `Mock evidence file: ${file.name}\nDescription: ${description}\nUploaded by: ${victimAddress}\nTimestamp: ${new Date().toISOString()}`;
+      const blob = new Blob([mockFileContent], { type: 'text/plain' });
+      const mockUrl = URL.createObjectURL(blob);
+      
+      // Store the mock file URL for later retrieval
+      const ipfsHash = `Qm${Math.random().toString(36).substr(2, 44)}`;
+      localStorage.setItem(`ipfs_${ipfsHash}`, mockUrl);
       return {
         success: true,
-        ipfsHash: `Qm${Math.random().toString(36).substr(2, 44)}`,
+        ipfsHash: ipfsHash,
         encryptionKey: Math.random().toString(36).substr(2, 32),
         metadata: {
           name: `Evidence_${Date.now()}`,
@@ -85,7 +101,7 @@ class ApiService {
           fileSize: file.size,
           encrypted: true
         },
-        pinataResponse: { IpfsHash: `Qm${Math.random().toString(36).substr(2, 44)}` }
+        pinataResponse: { IpfsHash: ipfsHash }
       };
     }
   }
@@ -95,10 +111,11 @@ class ApiService {
       const params = key ? `?key=${encodeURIComponent(key)}` : '';
       return this.request(`/evidence/${hash}${params}`);
     } catch (error) {
-      // Mock response for demo
+      // Check if we have a mock file stored
+      const mockUrl = localStorage.getItem(`ipfs_${hash}`);
       return {
         success: true,
-        ipfsUrl: `https://gateway.pinata.cloud/ipfs/${hash}`,
+        ipfsUrl: mockUrl || `https://gateway.pinata.cloud/ipfs/${hash}`,
         hash: hash
       };
     }

@@ -51,8 +51,15 @@ export const EvidenceSearch: React.FC = () => {
 
   const viewEvidence = () => {
     if (evidence?.hasAccess && evidence?.ipfsHash) {
-      const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${evidence.ipfsHash}`;
-      window.open(ipfsUrl, '_blank');
+      // Check if we have a mock file stored locally
+      const mockUrl = localStorage.getItem(`ipfs_${evidence.ipfsHash}`);
+      if (mockUrl) {
+        window.open(mockUrl, '_blank');
+      } else {
+        // Try the IPFS gateway
+        const ipfsUrl = `https://gateway.pinata.cloud/ipfs/${evidence.ipfsHash}`;
+        window.open(ipfsUrl, '_blank');
+      }
     }
   };
 
