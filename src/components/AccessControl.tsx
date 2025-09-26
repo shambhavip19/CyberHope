@@ -176,13 +176,15 @@ export const AccessControl: React.FC = () => {
           <Users className="h-6 w-6 text-blue-400" />
           <h2 className="text-xl font-semibold text-white">Access Control</h2>
         </div>
-        <button
-          onClick={loadUserEvidences}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-            loadAllAccessRequests();
-        >
-          Refresh
-        </button>
+<button
+  onClick={() => {
+    loadUserEvidences();
+    loadAllAccessRequests();
+  }}
+  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+>
+  Refresh
+</button>
       </div>
 
       {/* Tab Navigation */}
