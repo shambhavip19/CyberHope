@@ -76,7 +76,7 @@ export const useContract = () => {
   };
 
   const getEvidence = async (evidenceId: number) => {
-    if (!contract || !signer) throw new Error('Contract not initialized');
+    if (!contract) throw new Error('Contract not initialized');
 
     try {
       const stored = localStorage.getItem('evidenceData') || '[]';
@@ -87,22 +87,33 @@ export const useContract = () => {
         throw new Error('Evidence not found');
       }
       
-      // Check if current user has access
-      const userAddress = await signer.getAddress();
-      const hasAccess = evidence.victim.toLowerCase() === userAddress.toLowerCase() || 
-                       (evidence.grantedAccess && evidence.grantedAccess.some((access: any) => 
-                         access.address.toLowerCase() === userAddress.toLowerCase()));
-      
-      const hasRequested = evidence.accessRequests && evidence.accessRequests.some((req: any) => 
-        req.address.toLowerCase() === userAddress.toLowerCase());
-      
+      // Public system - everyone has access
       return {
         ...evidence,
-        hasAccess,
-        hasRequested
+        hasAccess: true,
+        hasRequested: false
       };
     } catch (err: any) {
       console.error('Get evidence failed:', err);
+      throw err;
+    }
+  };
+
+  const getAllEvidence = async () => {
+    try {
+      const stored = localStorage.getItem('evidenceData') || '[]';
+      const evidenceData = JSON.parse(stored);
+      
+      // Return all evidence sorted by timestamp (newest first)
+      return evidenceData
+        .sort((a: any, b: any) => b.timestamp - a.timestamp)
+        .map((evidence: any) => ({
+          ...evidence,
+          hasAccess: true,
+          hasRequested: false
+        }));
+    } catch (err: any) {
+      console.error('Get all evidence failed:', err);
       throw err;
     }
   };
@@ -322,6 +333,7 @@ export const useContract = () => {
     error,
     submitEvidence,
     getEvidence,
+    getAllEvidence,
     getUserEvidences,
     requestAccess,
     grantAccess,
