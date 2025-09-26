@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, Clock, Check, X, AlertCircle, UserPlus, UserMinus, Search, Bell, Eye } from 'lucide-react';
+import { Users, Shield, Clock, Check, X, AlertCircle, UserPlus, UserMinus, Search, Bell } from 'lucide-react';
 import { useWallet } from '../hooks/useWallet';
 import { useContract } from '../hooks/useContract';
 

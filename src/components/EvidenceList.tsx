@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Eye, Users, Clock, Shield, AlertCircle } from 'lucide-react';
-import { useWallet } from '../hooks/useWallet';
+import { FileText, Eye, Clock, Shield, AlertCircle } from 'lucide-react';
 import { useContract } from '../hooks/useContract';
 
 interface Evidence {
@@ -16,32 +15,25 @@ interface Evidence {
 }
 
 export const EvidenceList: React.FC = () => {
-  const { account, isConnected } = useWallet();
-  const { getUserEvidences, getEvidence } = useContract();
+  const { getAllEvidence } = useContract();
   const [evidences, setEvidences] = useState<Evidence[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isConnected && account) {
-      loadUserEvidences();
-    }
-  }, [isConnected, account]);
+    loadAllEvidences();
+  }, []);
 
-  const loadUserEvidences = async () => {
-    if (!account) return;
-
+  const loadAllEvidences = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const evidenceIds = await getUserEvidences(account);
-      const evidencePromises = evidenceIds.map(id => getEvidence(id));
-      const evidenceData = await Promise.all(evidencePromises);
+      const evidenceData = await getAllEvidence();
       setEvidences(evidenceData);
     } catch (err: any) {
       console.error('Failed to load evidences:', err);
-      setError('Failed to load your evidences');
+      setError('Failed to load evidence');
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +54,7 @@ export const EvidenceList: React.FC = () => {
   };
 
   const viewEvidence = (evidence: Evidence) => {
-    if (evidence.hasAccess && evidence.ipfsHash) {
+    if (evidence.ipfsHash) {
       // Check if we have a mock file stored locally
       const mockUrl = localStorage.getItem(`ipfs_${evidence.ipfsHash}`);
       if (mockUrl) {
@@ -75,15 +67,6 @@ export const EvidenceList: React.FC = () => {
     }
   };
 
-  if (!isConnected) {
-    return (
-      <div className="bg-gray-800 rounded-lg p-8 text-center">
-        <Shield className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-300 mb-2">Wallet Required</h3>
-        <p className="text-gray-500">Please connect your wallet to view your evidence</p>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -101,7 +84,7 @@ export const EvidenceList: React.FC = () => {
         <h3 className="text-lg font-medium text-red-400 mb-2">Error</h3>
         <p className="text-gray-300 mb-4">{error}</p>
         <button
-          onClick={loadUserEvidences}
+          onClick={loadAllEvidences}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
         >
           Retry
@@ -115,7 +98,7 @@ export const EvidenceList: React.FC = () => {
       <div className="bg-gray-800 rounded-lg p-8 text-center">
         <FileText className="h-12 w-12 text-gray-500 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-300 mb-2">No Evidence Found</h3>
-        <p className="text-gray-500">You haven't submitted any evidence yet</p>
+        <p className="text-gray-500">No evidence has been submitted yet</p>
       </div>
     );
   }
@@ -124,7 +107,7 @@ export const EvidenceList: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center space-x-3">
         <FileText className="h-6 w-6 text-blue-400" />
-        <h2 className="text-xl font-semibold text-white">Your Evidence</h2>
+        <h2 className="text-xl font-semibold text-white">All Evidence</h2>
         <span className="px-2 py-1 bg-blue-600 text-white text-sm rounded-full">
           {evidences.length}
         </span>
@@ -187,16 +170,11 @@ export const EvidenceList: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => viewEvidence(evidence)}
-                    disabled={!evidence.hasAccess || !evidence.ipfsHash}
+                    disabled={!evidence.ipfsHash}
                     className="flex items-center space-x-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white text-sm rounded transition-colors disabled:cursor-not-allowed"
                   >
                     <Eye className="h-4 w-4" />
                     <span>View</span>
-                  </button>
-                  
-                  <button className="flex items-center space-x-1 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors">
-                    <Users className="h-4 w-4" />
-                    <span>Manage Access</span>
                   </button>
                 </div>
               </div>
